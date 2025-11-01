@@ -296,6 +296,31 @@ async def ocr_figure(
                 if current_block and current_block['content'].strip():
                     blocks.append(current_block)
                 
+                # Если нет структурированных блоков, но есть raw_output,
+                # создаем один блок с описанием (для parse_figure, describe)
+                if not blocks and raw_output.strip():
+                    # Фильтруем служебные сообщения (BASE:, NO PATCHES, ===)
+                    clean_lines = []
+                    for line in raw_output.split('\n'):
+                        line_stripped = line.strip()
+                        if (line_stripped and 
+                            not line_stripped.startswith('===') and 
+                            not line_stripped.startswith('BASE:') and 
+                            not line_stripped.startswith('NO PATCHES')):
+                            clean_lines.append(line_stripped)
+                    
+                    description = '\n'.join(clean_lines).strip()
+                    
+                    if description:
+                        blocks.append({
+                            'id': 'ocr_block_description',
+                            'type': 'text',
+                            'content': description,
+                            'bbox': {'x0': 0, 'y0': 0, 'x1': 100, 'y1': 100},
+                            'confidence': 0.8
+                        })
+                        markdown_text = description
+                
                 logger.info(f"✅ Распознано {len(blocks)} блоков")
                 
                 return OCRResponse(

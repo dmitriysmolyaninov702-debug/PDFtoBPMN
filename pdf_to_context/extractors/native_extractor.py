@@ -310,9 +310,9 @@ class NativeExtractor:
                 image_data = self._render_region_to_image(page, bbox, dpi=render_dpi)
                 needs_ocr = True if image_data else False
                 
-                # Отладочный вывод для страницы 54
-                if page_num == 53:  # Индекс 53 = страница 54
-                    print(f"  [DEBUG] Векторный блок #{draw_idx}: area={bbox.area():.0f}px², rendered={image_data is not None}, needs_ocr={needs_ocr}")
+                # Отладочный вывод отключен
+                # if page_num == 53:  # Индекс 53 = страница 54
+                #     print(f"  [DEBUG] Векторный блок #{draw_idx}: area={bbox.area():.0f}px², rendered={image_data is not None}, needs_ocr={needs_ocr}")
             
             drawing_block = DrawingBlock(
                 bbox=bbox,
@@ -344,7 +344,8 @@ class NativeExtractor:
             clip_rect = fitz.Rect(bbox.x0, bbox.y0, bbox.x1, bbox.y1)
             
             # Проверяем, что область валидна
-            if clip_rect.is_empty or clip_rect.width < 10 or clip_rect.height < 10:
+            # Снижен порог с 10 до 1px для поддержки отдельных векторных элементов (линии, стрелки в BPMN)
+            if clip_rect.is_empty or clip_rect.width < 1 or clip_rect.height < 1:
                 return None
             
             # Рассчитываем zoom для требуемого DPI

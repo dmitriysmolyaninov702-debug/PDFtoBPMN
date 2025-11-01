@@ -58,7 +58,7 @@ class OCRClient:
     )
     
     def __init__(self, base_url: str = "http://localhost:8000",
-                 timeout: int = 60,
+                 timeout: int = 120,
                  max_retries: int = 3):
         """
         Инициализация OCR клиента
@@ -112,7 +112,11 @@ class OCRClient:
                   page_num: int,
                   bbox: Optional[BBox] = None,
                   mode: OCRMode = OCRMode.BASE,
-                  prompt: Optional[str] = None) -> OCRResponse:
+                  prompt: Optional[str] = None,
+                  prompt_type: str = "default",
+                  base_size: int = 1024,
+                  image_size: int = 1024,
+                  crop_mode: bool = False) -> OCRResponse:
         """
         OCR отдельного изображения/фигуры
         
@@ -122,6 +126,11 @@ class OCRClient:
             bbox: BBox элемента на странице
             mode: Режим OCR
             prompt: Кастомный промпт (по умолчанию PROMPT_FIGURE_PARSING)
+            prompt_type: Тип системного промпта DeepSeek-OCR 
+                        ("default", "parse_figure", "describe", "ocr_simple", etc.)
+            base_size: Базовое разрешение для обработки (1024 или 1280 для Large mode)
+            image_size: Размер окна изображения (обычно равен base_size)
+            crop_mode: Включить автообрезку значимых областей (False - безопаснее)
         
         Returns:
             OCRResponse: Результат OCR
@@ -134,12 +143,21 @@ class OCRClient:
             'file': ('image.png', io.BytesIO(image_data), 'image/png')
         }
         
+        # Параметры для form-data
+        data = {
+            'prompt_type': prompt_type,
+            'base_size': base_size,
+            'image_size': image_size,
+            'crop_mode': crop_mode
+        }
+        
         last_error = None
         for attempt in range(self.max_retries):
             try:
                 response = self._session.post(
                     url,
                     files=files,
+                    data=data,
                     timeout=self.timeout
                 )
                 
@@ -360,7 +378,10 @@ class OCRClient:
     
     def ocr_figure(self, image_data: bytes,
                    page_num: int,
-                   bbox: Optional[BBox] = None) -> OCRResponse:
+                   bbox: Optional[BBox] = None,
+                   prompt_type: str = "default",
+                   base_size: int = 1024,
+                   image_size: int = 1024) -> OCRResponse:
         """
         Алиас для ocr_image для совместимости с StructurePreserver
         
@@ -368,11 +389,22 @@ class OCRClient:
             image_data: Байты изображения
             page_num: Номер страницы
             bbox: BBox элемента (опционально)
+            prompt_type: Тип системного промпта ("default", "parse_figure" для BPMN, etc.)
+            base_size: Базовое разрешение (1024 или 1280)
+            image_size: Размер окна (обычно равен base_size)
         
         Returns:
             OCRResponse
         """
-        return self.ocr_image(image_data, page_num, bbox)
+        return self.ocr_image(
+            image_data, 
+            page_num, 
+            bbox,
+            prompt_type=prompt_type,
+            base_size=base_size,
+            image_size=image_size,
+            crop_mode=False  # crop_mode выключен по умолчанию (CUDA errors)
+        )
     
     def health_check(self) -> bool:
         """

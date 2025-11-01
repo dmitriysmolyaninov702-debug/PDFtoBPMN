@@ -108,22 +108,20 @@ class StructurePreserver:
             elif isinstance(block, DrawingBlock) and block.needs_ocr and block.image_data:
                 self._stats["total_drawings"] += 1
                 
-                # Проверяем площадь векторного элемента
+                # Для векторной графики нужна бОльшая площадь, чем для растровых изображений
+                # PyMuPDF извлекает каждый примитив (линия, стрелка) отдельно - их сотни!
+                # Отправляем в OCR только крупные элементы (целые диаграммы, большие блоки)
+                # min_area * 20 = 20000px² фильтрует мелкие блоки, оставляет только большие диаграммы
+                min_vector_area = self.min_area * 20
                 area = block.bbox.area()
-                if area < self.min_area:
+                
+                if area < min_vector_area:
                     self._stats["ocr_skipped"] += 1
-                    # Отладочный вывод для страницы 54
-                    if page_num == 53:  # page_num = 53 это страница 54 (индекс с 0)
-                        print(f"  [DEBUG] Пропущен векторный блок: {area:.0f}px² < {self.min_area:.0f}px²")
-                    # Слишком маленький - оставляем без OCR
-                    processed_blocks.append(block)
+                    # Слишком маленький векторный элемент (линия/стрелка) - полностью игнорируем
+                    # НЕ добавляем в processed_blocks, чтобы не засорять контекст
                     continue
                 
-                # Отладочный вывод для страницы 54
-                if page_num == 53:
-                    print(f"  [DEBUG] Обрабатываем векторный блок: {area:.0f}px² >= {self.min_area:.0f}px²")
-                
-                # OCR обработка векторной графики
+                # OCR обработка векторной графики (только крупные элементы)
                 ocr_block = self._process_drawing_ocr(block, page_num)
                 
                 if ocr_block:
@@ -135,7 +133,15 @@ class StructurePreserver:
                     processed_blocks.append(block)
             
             else:
-                # Текст, таблицы, векторная графика без OCR - без изменений
+                # Текст, таблицы, векторная графика без OCR
+                # Фильтруем маленькие DrawingBlock (линии, стрелки) даже без OCR
+                if isinstance(block, DrawingBlock):
+                    area = block.bbox.area()
+                    min_vector_area = self.min_area * 20
+                    if area < min_vector_area:
+                        # Игнорируем маленькие векторные элементы
+                        continue
+                
                 processed_blocks.append(block)
         
         # Сортируем блоки в порядке чтения: страница → Y (сверху вниз) → X (слева направо)
@@ -211,10 +217,14 @@ class StructurePreserver:
         
         try:
             # Отправляем отрендеренное изображение в OCR
+            # Для векторной графики используем parse_figure - оптимально для BPMN диаграмм
             ocr_response = self.ocr_client.ocr_figure(
                 image_data=drawing_block.image_data,
                 page_num=page_num,
-                bbox=drawing_block.bbox
+                bbox=drawing_block.bbox,
+                prompt_type="parse_figure",  # Лучший промпт для BPMN/диаграмм
+                base_size=1024,              # Базовое разрешение (достаточно для большинства)
+                image_size=1024              # Окно обработки
             )
             
             # Если OCR вернул результаты
