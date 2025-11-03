@@ -86,12 +86,8 @@ class StructurePreserver:
             if isinstance(block, ImageBlock) and block.needs_ocr:
                 self._stats["total_images"] += 1
                 
-                # Проверяем площадь изображения
-                if block.bbox.area() < self.min_area:
-                    self._stats["ocr_skipped"] += 1
-                    # Слишком маленькое - оставляем placeholder
-                    processed_blocks.append(block)
-                    continue
+                # Обрабатываем ВСЕ изображения без ограничения по площади
+                # (схемы BPMN могут быть любого размера)
                 
                 # OCR обработка
                 ocr_block = self._process_image_ocr(block, page_num)
@@ -104,44 +100,14 @@ class StructurePreserver:
                     # OCR не удался - оставляем оригинальный ImageBlock
                     processed_blocks.append(block)
             
-            # Если это DrawingBlock с флагом needs_ocr - обрабатываем через OCR
-            elif isinstance(block, DrawingBlock) and block.needs_ocr and block.image_data:
-                self._stats["total_drawings"] += 1
-                
-                # Для векторной графики нужна бОльшая площадь, чем для растровых изображений
-                # PyMuPDF извлекает каждый примитив (линия, стрелка) отдельно - их сотни!
-                # Отправляем в OCR только крупные элементы (целые диаграммы, большие блоки)
-                # min_area * 20 = 20000px² фильтрует мелкие блоки, оставляет только большие диаграммы
-                min_vector_area = self.min_area * 20
-                area = block.bbox.area()
-                
-                if area < min_vector_area:
-                    self._stats["ocr_skipped"] += 1
-                    # Слишком маленький векторный элемент (линия/стрелка) - полностью игнорируем
-                    # НЕ добавляем в processed_blocks, чтобы не засорять контекст
-                    continue
-                
-                # OCR обработка векторной графики (только крупные элементы)
-                ocr_block = self._process_drawing_ocr(block, page_num)
-                
-                if ocr_block:
-                    self._stats["ocr_processed"] += 1
-                    processed_blocks.append(ocr_block)
-                else:
-                    self._stats["ocr_errors"] += 1
-                    # OCR не удался - оставляем оригинальный DrawingBlock
-                    processed_blocks.append(block)
+            # DrawingBlock (векторная графика) - полностью игнорируем
+            # Векторные примитивы (линии, стрелки, рамки) не нужны в контексте
+            elif isinstance(block, DrawingBlock):
+                # Пропускаем векторную графику
+                continue
             
             else:
-                # Текст, таблицы, векторная графика без OCR
-                # Фильтруем маленькие DrawingBlock (линии, стрелки) даже без OCR
-                if isinstance(block, DrawingBlock):
-                    area = block.bbox.area()
-                    min_vector_area = self.min_area * 20
-                    if area < min_vector_area:
-                        # Игнорируем маленькие векторные элементы
-                        continue
-                
+                # Текст, таблицы и остальные блоки - оставляем без изменений
                 processed_blocks.append(block)
         
         # Сортируем блоки в порядке чтения: страница → Y (сверху вниз) → X (слева направо)
@@ -164,11 +130,14 @@ class StructurePreserver:
             return None
         
         try:
-            # Отправляем в OCR
+            # Отправляем в OCR с правильными параметрами для распознавания схем/диаграмм
             ocr_response = self.ocr_client.ocr_figure(
                 image_data=image_block.image_data,
                 page_num=page_num,
-                bbox=image_block.bbox
+                bbox=image_block.bbox,
+                prompt_type="parse_figure",  # Детальное описание диаграмм
+                base_size=1024,              # Оптимальный размер для BPMN схем
+                image_size=1024
             )
             
             # Если OCR вернул результаты

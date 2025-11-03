@@ -12,11 +12,35 @@ PDF Parser - базовый парсер PDF файлов
 """
 
 import fitz  # PyMuPDF
+import os
+import sys
+import contextlib
 from typing import Optional, Dict, Any
 from datetime import datetime
 from pathlib import Path
 
 from ..ir.models import DocumentMetadata
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    """
+    Подавление stderr на уровне файловых дескрипторов.
+    Работает с низкоуровневыми C-библиотеками (PyMuPDF).
+    """
+    stderr_fd = sys.stderr.fileno()
+    # Сохраняем оригинальный stderr
+    with os.fdopen(os.dup(stderr_fd), 'wb') as old_stderr:
+        # Перенаправляем stderr в /dev/null
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull_fd, stderr_fd)
+        os.close(devnull_fd)
+        try:
+            yield
+        finally:
+            # Восстанавливаем stderr
+            sys.stderr.flush()
+            os.dup2(old_stderr.fileno(), stderr_fd)
 
 
 class PDFParser:
@@ -62,7 +86,10 @@ class PDFParser:
             return self.doc
         
         try:
-            self.doc = fitz.open(self.file_path)
+            # Подавляем предупреждения PyMuPDF на уровне файловых дескрипторов
+            with suppress_stderr():
+                self.doc = fitz.open(self.file_path)
+            
             self._is_open = True
             return self.doc
         except Exception as e:
@@ -100,7 +127,9 @@ class PDFParser:
         if page_num < 0 or page_num >= len(self.doc):
             raise ValueError(f"Некорректный номер страницы: {page_num} (всего страниц: {len(self.doc)})")
         
-        return self.doc.load_page(page_num)
+        # Подавляем предупреждения при парсинге страницы
+        with suppress_stderr():
+            return self.doc.load_page(page_num)
     
     def get_total_pages(self) -> int:
         """

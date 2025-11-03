@@ -161,7 +161,16 @@ async def ocr_figure(
     try:
         # Читаем изображение
         image_data = await file.read()
-        image = Image.open(io.BytesIO(image_data))
+        
+        # Проверяем валидность изображения
+        try:
+            image = Image.open(io.BytesIO(image_data))
+            image.verify()  # Проверка целостности
+            # После verify() нужно заново открыть
+            image = Image.open(io.BytesIO(image_data))
+        except Exception as e:
+            logger.error(f"❌ Невалидное изображение: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid image file: {e}")
         
         # Сохраняем во временный файл (модель требует путь к файлу)
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:

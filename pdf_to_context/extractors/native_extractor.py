@@ -14,9 +14,33 @@ Native Extractor - нативное извлечение контента из P
 """
 
 import fitz  # PyMuPDF
+import sys
+import os
+import contextlib
 from typing import List, Optional, Dict, Any
 import io
 from PIL import Image
+
+
+@contextlib.contextmanager
+def suppress_stderr():
+    """
+    Подавление stderr на уровне файловых дескрипторов.
+    Работает с низкоуровневыми C-библиотеками (PyMuPDF).
+    """
+    stderr_fd = sys.stderr.fileno()
+    # Сохраняем оригинальный stderr
+    with os.fdopen(os.dup(stderr_fd), 'wb') as old_stderr:
+        # Перенаправляем stderr в /dev/null
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull_fd, stderr_fd)
+        os.close(devnull_fd)
+        try:
+            yield
+        finally:
+            # Восстанавливаем stderr
+            sys.stderr.flush()
+            os.dup2(old_stderr.fileno(), stderr_fd)
 
 try:
     import pdfplumber
@@ -98,16 +122,19 @@ class NativeExtractor:
             "table_blocks": []
         }
         
-        # 1. Извлечение текстовых блоков
-        result["text_blocks"] = self.extract_text_blocks(page)
+        # 1. Извлечение текстовых блоков (подавляем предупреждения PyMuPDF)
+        with suppress_stderr():
+            result["text_blocks"] = self.extract_text_blocks(page)
         
-        # 2. Извлечение изображений
+        # 2. Извлечение изображений (подавляем предупреждения PyMuPDF)
         if self.extract_images:
-            result["image_blocks"] = self.extract_image_blocks(page)
+            with suppress_stderr():
+                result["image_blocks"] = self.extract_image_blocks(page)
         
-        # 3. Извлечение векторной графики
+        # 3. Извлечение векторной графики (подавляем предупреждения PyMuPDF)
         if self.extract_drawings:
-            result["drawing_blocks"] = self.extract_drawing_blocks(
+            with suppress_stderr():
+                result["drawing_blocks"] = self.extract_drawing_blocks(
                 page,
                 render_to_image=self.render_vectors_to_image,
                 render_dpi=self.vector_render_dpi
@@ -220,28 +247,51 @@ class NativeExtractor:
         # Получаем список изображений
         images = page.get_images(full=True)
         
+        # Debug ВЫКЛЮЧЕН для уменьшения вывода
+        # if page_num < 30 and len(images) > 0:
+        #     print(f"  [DEBUG] Страница {page_num+1}: найдено {len(images)} изображений через get_images()")
+        
         for img_idx, img_info in enumerate(images):
             xref = img_info[0]
             
             try:
-                # Получаем bbox изображения
-                bbox_rect = page.get_image_bbox(xref)
-                if not bbox_rect:
+                # Получаем bbox изображения (используем get_image_rects вместо get_image_bbox)
+                rects = page.get_image_rects(xref)
+                if not rects or len(rects) == 0:
+                    # if page_num < 30:
+                    #     print(f"  [DEBUG] Страница {page_num+1}: изображение #{img_idx} xref={xref} - НЕТ bbox!")
                     continue
                 
+                # Берем первый rect (изображение может встречаться несколько раз на странице)
+                bbox_rect = rects[0]
+                
                 bbox = BBox(bbox_rect.x0, bbox_rect.y0, bbox_rect.x1, bbox_rect.y1)
+                area = (bbox.x1 - bbox.x0) * (bbox.y1 - bbox.y0)
+                
+                # Фильтруем маленькие изображения (логотипы, иконки)
+                # Минимальный размер: 100x100 пикселей (10000 px²)
+                if area < 10000:
+                    continue
                 
                 # Извлекаем данные изображения
                 base_image = page.parent.extract_image(xref)
                 image_bytes = base_image["image"]
                 image_ext = base_image["ext"]  # png, jpeg, etc.
                 
-                # Определяем размеры
+                # Определяем размеры и проверяем валидность
                 try:
                     pil_image = Image.open(io.BytesIO(image_bytes))
                     width, height = pil_image.size
-                except Exception:
-                    width, height = None, None
+                    
+                    # Двойная проверка размера по реальным размерам изображения
+                    if width < 100 or height < 100:
+                        continue
+                        
+                except Exception as e:
+                    # Изображение повреждено или в неподдерживаемом формате
+                    continue
+                    
+                width, height = pil_image.size
                 
                 image_block = ImageBlock(
                     bbox=bbox,
@@ -257,8 +307,14 @@ class NativeExtractor:
                 
                 image_blocks.append(image_block)
                 
+                # Debug ВЫКЛЮЧЕН
+                # if page_num < 30:
+                #     print(f"  [DEBUG] ✅ ImageBlock создан: стр={page_num+1}, xref={xref}, area={area:.0f}px², размер={width}x{height}, формат={image_ext}")
+                
             except Exception as e:
                 # Некоторые изображения могут не извлекаться (встроенные шрифты и т.д.)
+                # if page_num < 30:
+                #     print(f"  [DEBUG] ❌ Ошибка при создании ImageBlock: стр={page_num+1}, xref={xref}, error={e}")
                 continue
         
         return image_blocks
