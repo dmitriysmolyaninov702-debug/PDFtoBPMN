@@ -1,0 +1,11 @@
+=====================
+BASE:  torch.Size([1, 400, 1280])
+NO PATCHES
+=====================
+    Стр. 54 из 54
+
+Эксклюзивный шлюз по событиям
+
+<table><tr><th colspan="1" valign="top">Требования к моделированию в Business Studio</th><th colspan="1" rowspan="2" valign="top">КД-СТ-161-01</th></tr>
+<tr><td colspan="1" valign="top">Основание:</td></tr>
+</table>

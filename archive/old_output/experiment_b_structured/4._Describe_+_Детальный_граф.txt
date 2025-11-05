@@ -1,0 +1,5 @@
+=====================
+BASE:  torch.Size([1, 400, 1280])
+NO PATCHES
+=====================
+The BPMN diagram provided is a directed graph that represents the process flow for a business studio. The nodes in the graph represent different stages or activities in the process, such as "Process 1" and "Process 2". The edges between the nodes represent the flow of control or data between the activities. The labels on the edges provide additional information about the flow, such as the type of control or data being passed between the activities. The complete graph structure provides a complete representation of the process flow.

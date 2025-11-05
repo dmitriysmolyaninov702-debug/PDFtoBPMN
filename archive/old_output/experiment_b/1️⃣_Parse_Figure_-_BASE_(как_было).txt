@@ -1,0 +1,11 @@
+=====================
+BASE:  torch.Size([1, 256, 1280])
+NO PATCHES
+=====================
+The image displays a document with a white background and primarily black text, with some sections highlighted in yellow. At the top, there is a header in bold black text that reads "Требования к моделированию в Business Studio" followed by "КД-СТ-161-01" and "Стр. 54 из 54" indicating the document's page number and total pages. Below this header, there is a section titled "Продолжение приложения 8. Примеры использования логических шлюзов в нотации BPMN (справочное)" which translates to "Appendix 8. Examples of using logical locks in BPMN (extended)" suggesting that this is a continuation of a previous document.
+
+The main body of the document contains a diagram with three interconnected boxes, each labeled "Процесс 1," "Процесс 2," and "Процесс 3," respectively. These boxes are connected by arrows, indicating a flow or sequence of processes. The diagram is labeled "Событие 1," "Событие 2," and "Событие 3," which translates to "Event 1," "Event 2," and "Event 3," respectively. The boxes and arrows are colored in yellow, with the exception of the "Событие 1" box, which is in black.
+
+At the bottom of the image, there is a footer in black text that reads "Экспозиционный шлюз по событиям," which translates to "Expositional lock by events." This suggests that the document is related to a technical or business process involving locks and events.
+
+The overall layout of the document is structured and formal, typical of technical documentation. The use of color is minimal, with the exception of the yellow highlights, which draw attention to specific sections. The text is clear and legible, with no visible errors or typos.

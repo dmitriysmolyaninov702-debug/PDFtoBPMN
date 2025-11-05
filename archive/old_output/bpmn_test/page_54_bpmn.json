@@ -1,0 +1,17 @@
+{
+  "page_info": {
+    "page_num": 54,
+    "name": "Эксклюзивный шлюз по событиям",
+    "prompt_type": "bpmn",
+    "description": "Простая BPMN диаграмма: Процесс 1 → Gateway → События → Процессы 2,3"
+  },
+  "ocr_result": {
+    "blocks": [],
+    "markdown": "",
+    "raw_output": ""
+  },
+  "stats": {
+    "blocks_count": 0,
+    "markdown_length": 0
+  }
+}

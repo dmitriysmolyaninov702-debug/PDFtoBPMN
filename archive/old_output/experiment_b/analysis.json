@@ -1,0 +1,26 @@
+[
+  {
+    "test_name": "1️⃣ Parse Figure - BASE (как было)",
+    "length": 1729,
+    "language": "english",
+    "bpmn_elements_found": 8,
+    "connections_found": 5,
+    "has_coordinates": false,
+    "coordinate_blocks": 0,
+    "structured": 3,
+    "quality_score": 80,
+    "time_seconds": 10.807485580444336
+  },
+  {
+    "test_name": "2️⃣ Parse Figure - LARGE MODE 🔥",
+    "length": 1794,
+    "language": "english",
+    "bpmn_elements_found": 8,
+    "connections_found": 6,
+    "has_coordinates": false,
+    "coordinate_blocks": 0,
+    "structured": 3,
+    "quality_score": 80,
+    "time_seconds": 10.746387243270874
+  }
+]

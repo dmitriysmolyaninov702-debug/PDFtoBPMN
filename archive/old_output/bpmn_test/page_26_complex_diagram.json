@@ -1,0 +1,17 @@
+{
+  "page_info": {
+    "page_num": 26,
+    "name": "Переход от IDEF0 к BPMN",
+    "prompt_type": "complex_diagram",
+    "description": "Сложная схема с IDEF0 и BPMN элементами"
+  },
+  "ocr_result": {
+    "blocks": [],
+    "markdown": "",
+    "raw_output": ""
+  },
+  "stats": {
+    "blocks_count": 0,
+    "markdown_length": 0
+  }
+}

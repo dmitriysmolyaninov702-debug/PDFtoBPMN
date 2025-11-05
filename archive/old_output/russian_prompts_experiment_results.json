@@ -1,0 +1,66 @@
+{
+  "timestamp": "2025-10-31 16:48:46",
+  "test_image": "output/page_54_fresh_300dpi.png",
+  "results": [
+    {
+      "name": "🔴 BASELINE: ocr_simple (старый)",
+      "prompt_type": "ocr_simple",
+      "elapsed": 10.355683088302612,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": true,
+      "has_coords": true,
+      "success": false
+    },
+    {
+      "name": "🟢 NEW: russian_simple",
+      "prompt_type": "russian_simple",
+      "elapsed": 2.032355308532715,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": false,
+      "has_coords": true,
+      "success": false
+    },
+    {
+      "name": "🟢 NEW: russian_layout",
+      "prompt_type": "russian_layout",
+      "elapsed": 2.5765533447265625,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": false,
+      "has_coords": true,
+      "success": false
+    },
+    {
+      "name": "🟢 NEW: russian_bpmn",
+      "prompt_type": "russian_bpmn",
+      "elapsed": 2.1203153133392334,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": false,
+      "has_coords": true,
+      "success": false
+    },
+    {
+      "name": "🟢 NEW: russian_preserve",
+      "prompt_type": "russian_preserve",
+      "elapsed": 0.34299707412719727,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": false,
+      "has_coords": false,
+      "success": false
+    },
+    {
+      "name": "🟢 NEW: russian_full",
+      "prompt_type": "russian_full",
+      "elapsed": 0.33559560775756836,
+      "blocks": 0,
+      "found_elements": [],
+      "has_translit": false,
+      "has_coords": false,
+      "success": false
+    }
+  ]
+}

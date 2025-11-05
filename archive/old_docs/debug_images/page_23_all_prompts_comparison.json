@@ -1,0 +1,30 @@
+{
+  "default": {
+    "status": "success",
+    "time": 0.7484979629516602,
+    "blocks": 1,
+    "markdown_length": 53,
+    "first_block_preview": "<|ref|>image<|/ref|><|det|>[[0, 0, 999, 999]]<|/det|>"
+  },
+  "parse_figure": {
+    "status": "success",
+    "time": 12.498789072036743,
+    "blocks": 1,
+    "markdown_length": 1961,
+    "first_block_preview": "<table><tr><td>Статус</td><td>Описание</td></tr><tr><td>Исходные данные</td><td></td></tr><tr><td>Исходные данные</td><td></td></tr><tr><td>Исходные данных</td><td></td></tr><tr><td>Исходные данные</td><td></td></tr><tr><td>Исх</td><td></td></tr><tr><td>Исх</td><td></td></tr><tr><td>Исх</td></tr><tr><td>Исх</td><td></td></tr><tr><td>Исх</td><td></td><td></td></tr><tr><td>Исх</td><td></td><td></td></tr><tr><td>Исx</td><td></td><td></td></tr><tr><td>Исx</td><td></td><td></td></tr><tr><td>Индекс</t"
+  },
+  "describe": {
+    "status": "success",
+    "time": 14.994044542312622,
+    "blocks": 1,
+    "markdown_length": 3149,
+    "first_block_preview": "The figure is a flowchart that outlines the process for selecting a subcontractor for the development of a software system. Here is a detailed description of the flowchart:\n1. **Initial Consultation**:\n- The process begins with a consultation between the client and the subcontractor.\n- The client asks questions about the subcontractor's experience, capabilities, and the project's requirements.\n2. **Technical Consultation**:\n- The subcontractor conducts a technical consultation with the client.\n-"
+  },
+  "ocr_simple": {
+    "status": "success",
+    "time": 30.894639253616333,
+    "blocks": 1,
+    "markdown_length": 3865,
+    "first_block_preview": "<|ref|>Начало процесса<|/ref|><|det|>[[430, 40, 555, 55]]<|/det|>\n<|ref|>Источники поступления информации о наличии несоответствия<|/ref|><|det|>[[290, 90, 730, 105]]<|/det|>\n<|ref|>Чек-лист о состоянии<|/ref|><|det|>[[90, 113, 230, 128]]<|/det|>\n<|ref|>Добровольное/обязательное<|/ref|><|det|>[[430, 113, 600, 128]]<|/det|>\n<|ref|>Отчет о результатах аудита агентов по<|/ref|><|det|>[[720, 113, 960, 128]]<|/det|>\n<|ref|>аэродромной инфраструктуры<|/ref|><|det|>[[60, 127, 240, 141]]<|/det|>\n<|ref|>"
+  }
+}
