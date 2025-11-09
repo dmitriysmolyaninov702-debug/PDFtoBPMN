@@ -6,11 +6,11 @@
 import sys
 from pathlib import Path
 
-# Добавить путь к scripts в sys.path
-project_root = Path(__file__).parent
-sys.path.insert(0, str(project_root))
+# Добавить путь к корню проекта в sys.path
+project_root = Path(__file__).resolve().parent.parent.parent  # Вверх к /home/budnik_an/Obligations
+sys.path.insert(0, str(project_root / "scripts"))
 
-from scripts.pdf_to_context.pipeline import PDFToContextPipeline
+from pdf_to_context.pipeline import PDFToContextPipeline
 
 
 def main():

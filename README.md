@@ -222,7 +222,11 @@ PDFtoBPMN/
 │   │   ├── extractors/      # Текст, таблицы, графика
 │   │   ├── ir/              # Промежуточное представление
 │   │   └── ocr_service/     # DeepSeek-OCR интеграция
-│   └── utils/               # CLI утилиты (run_ocr, test)
+│   └── utils/               # 🛠️ CLI утилиты и тесты
+│       ├── run_ocr.py               # Обработка PDF с OCR
+│       ├── check_ocr_health.py      # Проверка OCR сервиса
+│       ├── test_deepseek_ocr.py     # Тест DeepSeek-OCR
+│       └── test_paddle_isolated.py  # Тест PaddleOCR (CPU)
 │
 ├── docs/
 │   ├── Architecture.md             # Техническая архитектура
@@ -293,7 +297,7 @@ PDFtoBPMN/
 
 ```bash
 # Запуск обработки PDF
-./run_ocr input/document.pdf output/document_OCR.md
+python3 scripts/utils/run_ocr.py input/document.pdf output/document_OCR.md
 ```
 
 **Что делает:**
@@ -304,11 +308,11 @@ PDFtoBPMN/
 
 ---
 
-### 2️⃣ `test_deepseek_ocr` - Тест модели
+### 2️⃣ `test_deepseek_ocr` - Тест модели DeepSeek-OCR (GPU)
 
 ```bash
-# Проверка установки OCR
-./test_deepseek_ocr
+# Проверка установки DeepSeek-OCR
+python3 scripts/utils/test_deepseek_ocr.py
 ```
 
 **Что проверяет:**
@@ -335,12 +339,33 @@ python3 scripts/utils/check_ocr_health.py
 **Использование:**
 ```bash
 # Перед обработкой документа
-python3 scripts/utils/check_ocr_health.py && ./run_ocr input/doc.pdf output/result.md
+python3 scripts/utils/check_ocr_health.py && python3 scripts/utils/run_ocr.py input/doc.pdf output/result.md
 ```
 
 ---
 
-### 4️⃣ `smoke_test` - Быстрая проверка компонентов
+### 4️⃣ `test_paddle_isolated` - Тест PaddleOCR (CPU fallback)
+
+```bash
+# Проверка PaddleOCR без GPU
+python3 scripts/utils/test_paddle_isolated.py
+```
+
+**Что проверяет:**
+- Импорт PaddleOCR и PaddlePaddle
+- Инициализация в CPU режиме (lang='ru')
+- Создание тестового изображения с русским текстом
+- OCR распознавание на CPU
+- Время обработки (~20-30 сек/изображение)
+
+**Когда использовать:**
+- Нет NVIDIA GPU или CUDA
+- Тестирование CPU fallback механизма
+- Проверка работы PaddleOCR перед обработкой больших документов
+
+---
+
+### 5️⃣ `smoke_test` - Быстрая проверка компонентов
 
 ```bash
 # Проверка что ничего не сломано (перед коммитом)
@@ -368,6 +393,7 @@ bash scripts/tests/smoke_test.sh
 | **[docs/Architecture.md](docs/Architecture.md)** | Техническая архитектура PDF to Context |
 | **[docs/BPMN_Elements_Reference.md](docs/BPMN_Elements_Reference.md)** | Полный справочник BPMN 2.0 |
 | **[docs/DeepSeek_OCR_Guide.md](docs/DeepSeek_OCR_Guide.md)** | Установка и настройка OCR |
+| **[docs/CURSOR_AI_TOOLS_GUIDE.md](docs/CURSOR_AI_TOOLS_GUIDE.md)** | 🛠️ Полное руководство по инструментам Cursor AI |
 | **[Changelog.md](Changelog.md)** | История всех изменений |
 
 ---
@@ -389,7 +415,7 @@ source venv/bin/activate
 python -m uvicorn scripts.pdf_to_context.ocr_service.app:app --host 0.0.0.0 --port 8000
 
 # 2. В другом терминале - обработать документ
-./run_ocr input/document.pdf output/document_OCR.md
+python3 scripts/utils/run_ocr.py input/document.pdf output/document_OCR.md
 ```
 
 **Без OCR:**

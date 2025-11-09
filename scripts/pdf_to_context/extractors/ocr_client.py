@@ -1,16 +1,14 @@
 """
-OCR Client - HTTP клиент для DeepSeek-OCR микросервиса
+OCR Client - универсальный клиент для OCR сервисов
 
-Взаимодействует с vLLM-based DeepSeek-OCR сервисом через HTTP API.
-Отправляет изображения страниц/блоков и получает структурированный Markdown.
-
-HTTP Contracts (из архитектурного анализа):
-- POST /ocr/page - OCR всей страницы
-- POST /ocr/figure - OCR отдельного графического элемента
+Поддерживает:
+1. Новую архитектуру: работа через OCRService (DeepSeek/PaddleOCR/...)
+2. Legacy: прямой HTTP к DeepSeek-OCR микросервису
 
 Принципы SOLID:
-- Single Responsibility: Только HTTP взаимодействие с OCR
-- Dependency Inversion: Зависимость от абстракций (OCRMode, OCRResponse)
+- Single Responsibility: Унифицированный интерфейс для OCR
+- Dependency Inversion: Зависимость от абстракций (OCRService, OCRMode, OCRResponse)
+- Adapter Pattern: Адаптация различных OCR реализаций к единому интерфейсу
 """
 
 import requests
@@ -27,6 +25,12 @@ from ..models.data_models import (
     BBox,
     ContentType
 )
+
+# Опциональный импорт новой архитектуры
+try:
+    from ..ocr_service.base import OCRService
+except ImportError:
+    OCRService = None
 
 
 class OCRClient:
@@ -57,18 +61,22 @@ class OCRClient:
         "Include any text labels, legends, and structural information."
     )
     
-    def __init__(self, base_url: str = "http://localhost:8000",
+    def __init__(self, 
+                 ocr_service: Optional['OCRService'] = None,
+                 base_url: str = "http://localhost:8000",
                  timeout: int = 120,
                  max_retries: int = 3):
         """
         Инициализация OCR клиента
         
         Args:
-            base_url: URL базового адреса OCR микросервиса
+            ocr_service: OCRService реализация (новая архитектура, если None - legacy HTTP)
+            base_url: URL базового адреса OCR микросервиса (для legacy mode)
             timeout: Таймаут HTTP запросов (секунды)
             max_retries: Максимальное количество попыток при ошибках
         """
-        self.base_url = base_url.rstrip('/')
+        self.ocr_service = ocr_service  # Новая архитектура
+        self.base_url = base_url.rstrip('/')  # Legacy
         self.timeout = timeout
         self.max_retries = max_retries
         self._session = requests.Session()
@@ -135,6 +143,16 @@ class OCRClient:
         Returns:
             OCRResponse: Результат OCR
         """
+        # НОВАЯ АРХИТЕКТУРА: Если передан OCRService - используем его
+        if self.ocr_service:
+            return self._ocr_figure_via_service(
+                image_data=image_data,
+                page_num=page_num,
+                bbox=bbox,
+                prompt_type=prompt_type
+            )
+        
+        # LEGACY: HTTP к DeepSeek-OCR микросервису
         # Новый API использует multipart/form-data вместо JSON
         url = f"{self.base_url}/ocr/figure"
         
@@ -422,6 +440,59 @@ class OCRClient:
         except Exception:
             return False
     
+    def _ocr_figure_via_service(self, 
+                                image_data: bytes,
+                                page_num: int,
+                                bbox: Optional[BBox],
+                                prompt_type: str) -> OCRResponse:
+        """
+        OCR через OCRService (новая архитектура)
+        
+        Args:
+            image_data: Байты изображения
+            page_num: Номер страницы
+            bbox: BBox элемента
+            prompt_type: Тип промпта
+        
+        Returns:
+            OCRResponse
+        """
+        # Формируем промпт из промпт-типа
+        prompt_map = {
+            'ocr_simple': '<image>\n<|grounding|>OCR this image.',
+            'parse_figure': '<image>\nParse the figure.',
+            'bpmn': '<image>\n<|grounding|>Parse this BPMN diagram.',
+            'default': '<image>\nExtract all text from this image.'
+        }
+        prompt = prompt_map.get(prompt_type, prompt_map['default'])
+        
+        # Обработка через OCRService
+        try:
+            markdown_text = self.ocr_service.process_image(image_data, prompt)
+            
+            # Создаем OCRResponse (упрощенный, без блоков)
+            ocr_block = OCRBlock(
+                id=f"ocr_{page_num}_{id(image_data)}",
+                type=ContentType.TEXT,  # OCR распознает текст
+                content=markdown_text,
+                bbox=bbox or BBox(0, 0, 0, 0),
+                page_num=page_num,
+                confidence=0.9  # Фиктивный confidence (т.к. не возвращается)
+            )
+            
+            return OCRResponse(
+                markdown=markdown_text,
+                blocks=[ocr_block],
+                page_id=page_num,
+                vision_tokens_used=0,  # Не применимо для PaddleOCR
+                text_tokens_generated=len(markdown_text.split()),  # Примерное число токенов
+                mode=OCRMode.BASE,  # Базовый режим
+                confidence_avg=0.9  # Фиктивный confidence
+            )
+        
+        except Exception as e:
+            raise RuntimeError(f"OCR через {self.ocr_service.get_service_name()} не удался: {e}")
+    
     def close(self):
         """Закрыть HTTP сессию"""
         self._session.close()
@@ -436,6 +507,8 @@ class OCRClient:
     
     def __repr__(self) -> str:
         """Строковое представление"""
+        if self.ocr_service:
+            return f"OCRClient(service={self.ocr_service.get_service_name()})"
         return f"OCRClient(base_url={self.base_url})"
 
 

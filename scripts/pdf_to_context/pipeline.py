@@ -79,6 +79,7 @@ class PDFToContextPipeline:
         # Автоматическое определение режима OCR
         if enable_ocr is None:
             enable_ocr = self._auto_detect_ocr(ocr_base_url)
+        
         # Инициализация компонентов (НОВАЯ АРХИТЕКТУРА)
         self.analyzer = PageAnalyzer()
         self.native_extractor = NativeExtractor(
@@ -89,8 +90,23 @@ class PDFToContextPipeline:
             vector_render_dpi=vector_render_dpi
         )
         
-        # OCR клиент (опционально)
-        self.ocr_client = OCRClient(base_url=ocr_base_url) if enable_ocr else None
+        # OCR клиент с автоматическим выбором сервиса (НОВАЯ АРХИТЕКТУРА)
+        self.ocr_client = None
+        if enable_ocr:
+            try:
+                from .ocr_service.factory import OCRServiceFactory
+                ocr_service = OCRServiceFactory.create(
+                    prefer_deepseek=True,
+                    deepseek_url=ocr_base_url,
+                    paddleocr_lang="ru"
+                )
+                self.ocr_client = OCRClient(ocr_service=ocr_service)
+            except RuntimeError as e:
+                # Ни один OCR сервис недоступен
+                print(f"⚠️ OCR недоступен: {e}")
+                print("   Обработка продолжится БЕЗ OCR (только текст)")
+                self.ocr_client = None
+                enable_ocr = False
         
         # StructurePreserver - ключевой компонент новой архитектуры
         self.structure_preserver = StructurePreserver(
@@ -106,10 +122,15 @@ class PDFToContextPipeline:
         )
         
         self.enable_ocr = enable_ocr
+        self.ocr_service_name = None  # Название используемого OCR сервиса
+        if self.ocr_client and hasattr(self.ocr_client, 'ocr_service'):
+            self.ocr_service_name = self.ocr_client.ocr_service.get_service_name()
+        
         self._stats = {
             "total_pages": 0,
             "total_images": 0,
             "ocr_processed": 0,
+            "ocr_errors": 0,
             "errors": []
         }
     
@@ -369,6 +390,14 @@ class PDFToContextPipeline:
         """Вывод статистики обработки (НОВАЯ АРХИТЕКТУРА)"""
         print("\n📊 Статистика обработки:")
         print(f"   Всего страниц: {self._stats['total_pages']}")
+        
+        # Информация об используемом OCR
+        if self.enable_ocr and self.ocr_service_name:
+            print(f"\n   🔍 OCR сервис: {self.ocr_service_name}")
+        elif self.enable_ocr and not self.ocr_service_name:
+            print(f"\n   ⚠️  OCR: запрошен, но недоступен (работа без OCR)")
+        else:
+            print(f"\n   📝 Режим: Только текст (OCR отключен)")
         
         # Статистика StructurePreserver
         if self.enable_ocr:

@@ -26,11 +26,13 @@ MANIFEST
 # Virtual Environments
 venv/
 venv_*/
+vllm_venv/
 ENV/
 env/
 .venv
 
-# DeepSeek-OCR
+# Models and OCR
+models/
 DeepSeek-OCR/
 .cache/
 *.cache
@@ -45,33 +47,26 @@ DeepSeek-OCR/
 # OS
 .DS_Store
 Thumbs.db
-*.log
 
 # Project specific
-input
-output
+input/         # Входные документы пользователей (приватные)
+output/        # Результаты обработки (приватные)
 *.md.bak
 
-# Archive (exclude sensitive/temporary data)
-archive/tests/
-archive/old_output/
-archive/vllm_test_*/
-archive/*_backup_*/
-archive/*.bpmn
-archive/*.png
-archive/*.md
-# Keep: archive/old_docs/ (documentation)
+# Archive (исключить полностью для публичного репозитория)
+archive/
+
+# Temporary files and logs
+*.log
+ocr_service.log
+ocr_service.pid
 prompt_test_output.log
 test_vector_debug_output.log
 show_results.html
 test_ocr_simple.png
 input_data/test_ocr.png
 
-# Test files (временные)
-test_deepseek_*.py
-test_vector_*.py
-test_full_pipeline_*.py
-test_new_pipeline.py
-test_simple_*.py
-test_ocr_*.py
+# Временные тестовые скрипты (в корне)
+test_*.py
+!scripts/utils/test_*.py  # Разрешить утилиты в scripts/utils/
 
